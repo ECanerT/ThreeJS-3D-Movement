@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Paintball </title>
+    <meta charset="utf-8" />
+    
+    <style>
+        body {
+            margin: 0;
+        }
+        #ekran {
+            background-color: rgba(0, 0, 0, 0.9);
+            font-family: arial;
+        }
+        #aciklama {
+            color: #ffffff;
+        }
+        #button1{
+            position:absolute;
+
+        }
+    </style>
+</head>
+
+<body>
+    <div id="ekran">
+
+        <div id="aciklama">
+            <span style="font-size:40px">Bitirme Projesi Demosu</span>
+            <br />
+            Emin Caner Taşkın
+        </div>
+
+    </div>
+    <button id="button1">Kamera</button>                
+    <script src="js/three.js"></script>
+    <script src="js/OrbitControls.js"></script>
+    <script src="js/GLTFLoader.js"></script>
+    <script src="js/target.js"></script>
+    <script src="js/targetnpc.js"></script>
+    <script src="js/bush.js"></script>
+    <script src="js/tree.js"></script>
+    <script type="module">                                                      // JAVASCRIPT 
+        //https://codepen.io/viniciusSouza/pen/gOPVmKV
+        import { VRButton } from 'https://unpkg.com/three/examples/jsm/webxr/VRButton.js';
+
+        var scene, camera, renderer, clock, mode;
+        var raycaster,mouse;
+        var mixers = [];
+        var actions = [];
+        var parts = [];
+        var mSkybox1 = [];
+        var bullets= [];
+
+            scene = new THREE.Scene();
+
+            clock = new THREE.Clock();
+
+            camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 100000 );
+            camera.position.set(-0.8534472832758337, 1.6154251296035849,-2.093085920247191);
+            camera.lookAt(-0.8834472832758337, 1.6154251296035849,1.3823085920247191);  // Kamera Ayarlari
+            
+            // controls.addEventListener( "change", event => {  
+            //  console.log( controls.object.rotation );
+            //  console.log( controls.object.position );  
+            // };
+            
+            renderer = new THREE.WebGLRenderer({antialias: true});      // Renderer
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.xr.enabled = true;
+            renderer.setAnimationLoop(renderer);
+        
+            document.body.appendChild(renderer.domElement);             // VR
+            document.body.appendChild(VRButton.createButton(renderer));
+
+
+            // const controls = new THREE.OrbitControls(camera, renderer.domElement);  // Orbit Control
+            // controls.target.set(0,0,0);
+            // controls.update();
+
+            const ambient = new THREE.HemisphereLight(0xffffbb, 0x080820);   // Isiklar
+            scene.add(ambient);
+            
+            const dLight = new THREE.DirectionalLight(0xFFFFFF,1);
+            scene.add(dLight);
+            dLight.position.set(2,10, 25);
+
+            const buyukluk = 100;
+            const bolumler = 100;
+            const izgara = new THREE.GridHelper( buyukluk, bolumler );      // Izgara
+            scene.add( izgara ); 
+
+            raycaster = new THREE.Raycaster();          // Raycaster
+            mouse = new THREE.Vector2();
+
+            document.addEventListener('mousemove', onMouseMove);
+            
+            function onMouseMove(event) {
+                mouse.x = (event.clientX/window.innerWidth)*2-1;
+                mouse.y = -(event.clientY/window.innerHeight)*2+1;
+            }
+            
+            
+            //document.addEventListener("keydown", onCameraView, false);
+
+            const assetPath = '';                              //Loader
+            const loader = new THREE.GLTFLoader();
+            loader.setPath(assetPath);
+
+            
+            
+            loader.load('models/wpaintrifle.glb', function(object) {       //OBJELER
+
+                const char = object.scene.children[0];
+                const char1 = object.scene.children[1];
+                let mixerChar = new THREE.AnimationMixer(char);
+                mixers.push(mixerChar);
+                let actionChar = mixerChar.clipAction(object.animations[0]);
+                //actionSolKup.loop = THREE.LoopOnce;
+                actionChar.clampWhenFinished = false;
+                actions.push(actionChar);
+                scene.add(object.scene);
+                parts.push(char);
+                parts.push(char1);
+
+            });
+
+            //const loader1 = new THREE.GLTFLoader();
+            //loader.setPath(assetPath);
+            loader.load('models/Barrel.glb', function(barrel) {
+                
+                const barrelobj = barrel.scene.children[0];
+                scene.add(barrelobj);
+                barrelobj.position.set(5,1.2,5);
+
+            });
+            loader.load('models/map2.glb', function(map) {
+                
+                const paintballmap = map.scene.children[0];
+                scene.add(map.scene);
+                paintballmap.position.set(0,0,0);
+
+            });
+
+            const frontSide1 = new THREE.TextureLoader().load('Boxes/zeus_ft.jpg');     //SKYBOX
+            const backSide1 = new THREE.TextureLoader().load('Boxes/zeus_bk.jpg');
+            const topSide1 = new THREE.TextureLoader().load('Boxes/zeus_up.jpg');
+            const bottomSide1 = new THREE.TextureLoader().load('Boxes/zeus_dn.jpg');
+            const rightSide1 = new THREE.TextureLoader().load('Boxes/zeus_rt.jpg');
+            const leftSide1 = new THREE.TextureLoader().load('Boxes/zeus_lf.jpg');
+            
+            mSkybox1.push(new THREE.MeshBasicMaterial({map: frontSide1}));      
+            mSkybox1.push(new THREE.MeshBasicMaterial({map: backSide1}));
+            mSkybox1.push(new THREE.MeshBasicMaterial({map: topSide1}));
+            mSkybox1.push(new THREE.MeshBasicMaterial({map: bottomSide1}));
+            mSkybox1.push(new THREE.MeshBasicMaterial({map: rightSide1}));
+            mSkybox1.push(new THREE.MeshBasicMaterial({map: leftSide1}));
+        
+            let gSkybox1 = new THREE.BoxGeometry(500,500,500);
+            let skybox1 = new THREE.Mesh(gSkybox1, mSkybox1);
+            scene.add(skybox1);
+
+            for(let i=0; i<6; i++) {
+                mSkybox1[i].side = THREE.BackSide;
+            }
+
+
+            const listener = new THREE.AudioListener();         // SESLER
+            camera.add( listener );
+            let footsteps = new THREE.Audio( listener );
+            const audioLoader = new THREE.AudioLoader();
+
+            audioLoader.load( 'sounds/footsteps1.wav', function( buffer ) {
+                footsteps.setBuffer( buffer );
+                footsteps.setLoop( false );
+                footsteps.setVolume( 0.4 );
+            },
+            );
+
+            audioLoader.load( 'sounds/gunfire.mp3', function( buffer ) {
+                gunfire.setBuffer( buffer );
+                gunfire.setLoop( false );
+                gunfire.setVolume( 0.4 );
+            },
+            );
+
+            for(var i=0; i<bullets.lenght; i++){            //Mermi Ates Etme
+                if(bullets[i]===undefined)continue;
+                if(bullets[i].alive==false){
+                    bullets.splice(i,1);
+                    continue;
+                }
+                bullets[i].position.add(bullets[i].velocity);
+            }
+            
+
+            document.addEventListener('keydown', canlandir, false);     //Event Listener
+            document.addEventListener('keyup', durdur, false);
+            document.addEventListener('keydown', ateset, false);
+            window.addEventListener('resize', resize, false);
+            animate();
+            
+            
+
+        
+
+        function animate() {                            // ANIMATE
+            requestAnimationFrame(animate);
+            const dt = clock.getDelta();
+            mixers.forEach(mixer => mixer.update(dt));
+            renderer.render(scene, camera);
+            
+            
+        }
+
+        
+
+        function resize() {                                             // RESIZE
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+
+        function canlandir(event) {                                                 //KONTROLLER
+            const camerax = camera.position.x;
+            const cameray = camera.position.y;
+            const cameraz = camera.position.z;
+            const rotx = camera.rotation.x;
+            const roty = camera.rotation.y;
+            const rotz = camera.rotation.z;
+            var playerSpeed = 0.1;
+
+            var keyCode = event.which;    
+            if(keyCode == 87 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.timeScale = 1;
+                        action.play();
+                    });
+                    parts.forEach(part => part.position.z += playerSpeed*1.25);
+                    camera.position.z += playerSpeed*1.25;
+                    footsteps.play();
+                    
+            }
+            if(keyCode == 83 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.timeScale = -1;
+                        action.play();
+                    });
+                    parts.forEach(part => part.position.z -= playerSpeed);
+                    camera.position.z -= playerSpeed;  
+                    footsteps.play();          
+            }
+            if(keyCode == 65 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.timeScale = 1;
+                        action.play();
+                    });
+                    parts.forEach(part => part.position.x += playerSpeed);
+                    camera.position.x += playerSpeed;
+                    footsteps.play();
+            }
+            if(keyCode == 68 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.timeScale = -1;
+                        action.play();
+                    });
+                    parts.forEach(part => part.position.x -=playerSpeed); 
+                    camera.position.x -= playerSpeed;   
+                    footsteps.play();        
+            }if(keyCode == 65 && keyCode == 87 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.timeScale = -1;
+                        action.play();
+                    });
+                    parts.forEach(part => part.position.z += 0.25); 
+                    parts.forEach(part => part.position.x += 0.25);            
+            }
+        }
+        function durdur(event) {                                                //KONTROL BITIS
+
+            var keyCode = event.which;
+            //alert(keyCode);
+            if(keyCode == 87 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.reset();
+                        action.stop();
+                        
+                    }); 
+                    footsteps.stop();
+                    
+            }
+            if(keyCode == 83 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.reset();
+                        action.stop();
+                        
+                    });
+                    footsteps.stop();
+                    
+            }
+            if(keyCode == 65 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.reset();
+                        action.stop();
+                        
+                    }); 
+                    footsteps.stop();
+                    
+            }
+            if(keyCode == 68 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.reset();
+                        action.stop();
+                        
+                    });
+                    footsteps.stop();
+                    
+            }
+        }
+        function ateset(event){                                            // KONTROL MERMI
+
+            var keyCode = event.which;
+            if(keyCode == 32 && actions !== undefined) //space
+            {   
+                var bulletg= new THREE.SphereGeometry(55,8,8);
+                var bulletm= new THREE.MeshBasicMaterial({color:0xff0000});
+                var bullet = new THREE.Mesh(bulletg,bulletm);
+                bullet.position.set(
+                    camerax,cameray,cameraz+1
+                );
+                bullet.velocity = new THREE.Vector3(
+                    Math.sin(camera.rotation.y),0,
+                    Math.cos(camera.rotation.y)
+                );
+                bullet.alive = true;
+                setTimeout(
+                function(){
+                    bullet.alive=false;
+                    scene.remove(bullet);
+                },1000);
+                bullets.push(bullet);
+                scene.add(bullet);
+                gunfire.play();
+            }
+
+        }
+        
+
+    </script>
+</body>
+
+</html>

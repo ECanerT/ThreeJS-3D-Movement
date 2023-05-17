@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Paintball </title>
+    <meta charset="utf-8" />
+    
+    <style>
+        body {
+            margin: 0;
+        }
+        #ekran {
+            background-color: rgba(0, 0, 0, 0.9);
+            font-family: arial;
+        }
+        #aciklama {
+            color: #ffffff;
+        }
+        #button1{
+            position:absolute;
+
+        }
+    </style>
+</head>
+
+<body>
+    <div id="ekran">
+
+        <div id="aciklama">
+            <span style="font-size:40px">Bitirme Projesi Demosu</span>
+            <br />
+            Emin Caner Taşkın
+        </div>
+
+    </div>
+    <button id="button1">Kamera</button>
+    <script src="three.js"></script>
+    <script src="OrbitControls.js"></script>
+    <script src="GLTFLoader.js"></script>
+    <script src="target.js"></script>
+    <script src="targetnpc.js"></script>
+    <script src="bush.js"></script>
+    <script src="tree.js"></script>
+    <script type="module">
+
+        import { VRButton } from 'https://unpkg.com/three/examples/jsm/webxr/VRButton.js';
+
+        var scene, camera, renderer, clock, mode;
+        var mixers = [];
+        var actions = [];
+        var parts = [];
+        
+
+            scene = new THREE.Scene();
+
+            clock = new THREE.Clock();
+
+            camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 100000 );
+            camera.position.set(-0.8534472832758337, 1.6154251296035849,-2.093085920247191);
+            camera.lookAt(-0.8834472832758337, 1.6154251296035849,1.3823085920247191);
+            
+            
+            renderer = new THREE.WebGLRenderer();
+            renderer.setClearColor(new THREE.Color(0xaabbff));
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.xr.enabled = true;
+            renderer.setAnimationLoop(renderer);
+        
+            document.body.appendChild(renderer.domElement);
+            document.body.appendChild(VRButton.createButton(renderer));
+
+            // const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            // controls.target.set(0,0,0);
+            // controls.update();
+
+            // let controls= new THREE.PointerLockControls(camera, renderer.domElement);
+            
+            // let btn1 = document.querySelector("#button1");
+            // btn1.addEventListener('click',()=>{
+            //     controls.lock();
+            // })
+
+            const ambient = new THREE.HemisphereLight(0xffffbb, 0x080820);
+            scene.add(ambient);
+            
+            const dLight = new THREE.DirectionalLight(0xFFFFFF,1);
+            scene.add(dLight);
+            dLight.position.set(2,10, 25);
+
+            const buyukluk = 100;
+            const bolumler = 100;
+            const izgara = new THREE.GridHelper( buyukluk, bolumler );
+            scene.add( izgara ); 
+            
+            
+            
+            //document.addEventListener("keydown", onCameraView, false);
+
+            const assetPath = '';
+            const loader = new THREE.GLTFLoader();
+            loader.setPath(assetPath);
+
+            document.addEventListener('keydown', canlandir, false);
+            document.addEventListener('keyup', durdur, false);
+            document.addEventListener('mouseup', yukaribak, false);
+
+            loader.load('forwardmove.glb', function(object) {
+
+                const solKup = object.scene.children[0];
+                let mixerSolKup = new THREE.AnimationMixer(solKup);
+                mixers.push(mixerSolKup);
+                let actionSolKup = mixerSolKup.clipAction(object.animations[0]);
+                //actionSolKup.loop = THREE.LoopOnce;
+                actionSolKup.clampWhenFinished = false;
+                actions.push(actionSolKup);
+                scene.add(object.scene);
+                parts.push(solKup);
+
+            });
+            
+
+            // controls.addEventListener( "change", event => {  
+            //  console.log( controls.object.rotation );
+            //  console.log( controls.object.position );  
+            // } );
+            
+            window.addEventListener('resize', resize, false);
+            animate();
+            
+
+
+        
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = clock.getDelta();
+            mixers.forEach(mixer => mixer.update(dt));
+            renderer.render(scene, camera);
+            
+            
+        }
+
+        
+
+        function resize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+
+        function canlandir(event) {
+            const camerax = camera.position.x;
+            const cameray = camera.position.y;
+            const cameraz = camera.position.z;
+            const rotx = camera.rotation.x;
+            const roty = camera.rotation.y;
+            const rotz = camera.rotation.z;
+
+            var keyCode = event.which;    
+            if(keyCode == 87 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.timeScale = 1;
+                        action.play();
+                    });
+                    parts.forEach(part => part.position.z += 0.25);
+                    camera.position.z += 0.25;
+                    
+            }
+            if(keyCode == 83 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.timeScale = -1;
+                        action.play();
+                    });
+                    parts.forEach(part => part.position.z -= 0.25);
+                    camera.position.z -= 0.25;            
+            }
+            if(keyCode == 65 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.timeScale = 1;
+                        action.play();
+                    });
+                    parts.forEach(part => part.position.x += 0.25);
+                    camera.position.x += 0.25;
+            }
+            if(keyCode == 68 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.timeScale = -1;
+                        action.play();
+                    });
+                    parts.forEach(part => part.position.x -= 0.25); 
+                    camera.position.x -= 0.25;           
+            }if(keyCode == 65 && keyCode == 87 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.timeScale = -1;
+                        action.play();
+                    });
+                    parts.forEach(part => part.position.z += 0.25); 
+                    parts.forEach(part => part.position.x += 0.25);            
+            }
+        }
+        function durdur(event) {
+
+            var keyCode = event.which;
+            if(keyCode == 87 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.reset();
+                        action.stop();
+                        
+                    }); 
+                    
+            }
+            if(keyCode == 83 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.reset();
+                        action.stop();
+                        
+                    });
+                    
+            }
+            if(keyCode == 65 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.reset();
+                        action.stop();
+                        
+                    }); 
+                    
+            }
+            if(keyCode == 68 && actions !== undefined) {
+
+                    actions.forEach( action => {
+                        action.reset();
+                        action.stop();
+                        
+                    });
+                    
+            }
+        }
+        
+
+    </script>
+</body>
+
+</html>
